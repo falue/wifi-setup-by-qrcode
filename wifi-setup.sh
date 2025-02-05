@@ -15,30 +15,59 @@ echo "Stopping services before configuration..."
 sudo systemctl stop hostapd
 sudo systemctl stop dnsmasq
 
-echo "Configuring static IP for wlan0 (Hotspot Mode: 192.168.4.1)..."
-sudo tee /etc/dhcpcd.conf > /dev/null <<EOF
-# Static IP for hotspot mode
+echo "Backing up existing dhcpcd.conf if not already backed up..."
+if [[ ! -f /etc/dhcpcd.conf.backup ]]; then
+    sudo cp /etc/dhcpcd.conf /etc/dhcpcd.conf.backup
+    echo "Backup created at /etc/dhcpcd.conf.backup"
+else
+    echo "Backup already exists, skipping..."
+fi
+
+echo "Adding static IP for wlan0 (Hotspot Mode: 192.168.4.1)..."
+if ! grep -q "interface wlan0" /etc/dhcpcd.conf; then
+    sudo tee -a /etc/dhcpcd.conf > /dev/null <<EOF
+
+# Wi-Fi Hotspot Mode (Static IP)
 interface wlan0
 static ip_address=192.168.4.1/24
 nohook wpa_supplicant
 EOF
+    echo "Static IP for Hotspot Mode added."
+else
+    echo "Hotspot Mode IP configuration already exists, skipping..."
+fi
 
-echo "Configuring static IP for eth0 and wlan0 in client mode..."
-sudo tee -a /etc/dhcpcd.conf > /dev/null <<EOF
-# Static IP for Wi-Fi client mode
+echo "Adding static IP for wlan0 (Client Mode: 192.168.1.100)..."
+if ! grep -q "static ip_address=192.168.1.100" /etc/dhcpcd.conf; then
+    sudo tee -a /etc/dhcpcd.conf > /dev/null <<EOF
+
+# Wi-Fi Client Mode (Static IP)
 interface wlan0
 static ip_address=192.168.1.100/24
 static routers=192.168.1.1
 static domain_name_servers=8.8.8.8 8.8.4.4
+EOF
+    echo "Static IP for Client Mode added."
+else
+    echo "Client Mode IP configuration already exists, skipping..."
+fi
 
-# Static IP for Ethernet (if connected)
+echo "Adding static IP for eth0 (Static Ethernet Configuration)..."
+if ! grep -q "interface eth0" /etc/dhcpcd.conf; then
+    sudo tee -a /etc/dhcpcd.conf > /dev/null <<EOF
+
+# Ethernet (Static IP)
 interface eth0
 static ip_address=192.168.1.50/24
 static routers=192.168.1.1
 static domain_name_servers=8.8.8.8 8.8.4.4
 EOF
+    echo "Static IP for Ethernet added."
+else
+    echo "Ethernet configuration already exists, skipping..."
+fi
 
-echo "Restarting networking service to apply static IP settings..."
+echo "Restarting networking service to apply changes..."
 sudo systemctl restart dhcpcd
 
 echo "Configuring dnsmasq (DHCP server for hotspot mode)..."
