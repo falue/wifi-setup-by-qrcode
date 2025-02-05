@@ -7,6 +7,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Script is running from: $SCRIPT_DIR"
 
+# Ensure the script is run with sudo
+if [[ $EUID -ne 0 ]]; then
+    echo "Error: This script must be run as root. Use: sudo bash wifi-setup.sh"
+    exit 1
+fi
+
 echo "Updating system and installing required packages..."
 # sudo apt update && sudo apt upgrade -y
 sudo apt install -y hostapd dnsmasq python3-flask qrencode iw net-tools
