@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 import os
 import subprocess
 import time
@@ -42,7 +42,6 @@ network={{
         os.system("sudo pkill wpa_supplicant")
         os.system(f"sudo wpa_supplicant -B -i wlan0 -c {ORIGINAL_WPA_FILE}")
 
-
 def connect_to_wifi(ssid, password):
     """ Writes Wi-Fi credentials to wpa_supplicant and attempts connection. """
     wifi_config = f"""
@@ -52,8 +51,9 @@ def connect_to_wifi(ssid, password):
         key_mgmt=WPA-PSK
     }}
     """
-    with open("/etc/wpa_supplicant/wpa_supplicant.conf", "w") as file:
-        file.write(wifi_config)
+    # with open("/etc/wpa_supplicant/wpa_supplicant.conf", "w") as file:
+        # file.write(wifi_config)
+    os.system(f"echo '{wifi_config}' | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf > /dev/null")
 
     # Restart Wi-Fi service
     os.system("sudo systemctl restart wpa_supplicant")
@@ -75,17 +75,21 @@ def index():
         ssid = request.form["ssid"]
         password = request.form["password"]
 
+        if not ssid:
+            return jsonify({"error": "SSID cannot be empty"}), 400
+
+        # Show loading message (via JavaScript)
         if validate_wifi_credentials(ssid, password):
             with open(ORIGINAL_WPA_FILE, "a") as f:
                 f.write(f'\nnetwork={{\n    ssid="{ssid}"\n    psk="{password}"\n}}')
 
             # Apply new settings and connect immediately
-            if connect_to_wifi():
-                return render_template("index.html", message="Connected successfully! The Pi is now on the new network.")
+            if connect_to_wifi(ssid, password):
+                return jsonify({"message": "Connected successfully! The Pi is now on the new network."})
             else:
-                return render_template("index.html", error="Credentials saved, but failed to connect. Try rebooting.")
-        
-        return render_template("index.html", error="Failed to validate Wi-Fi. Check SSID and password.")
+                return jsonify({"error": "Credentials saved, but failed to connect. Try rebooting."}), 500
+
+        return jsonify({"error": "Failed to validate Wi-Fi. Check SSID and password."}), 400
 
     return render_template("index.html")
 
