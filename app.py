@@ -21,30 +21,53 @@ country=US
 network={{
     ssid="{ssid}"
     psk="{password}"
+    key_mgmt=WPA-PSK
 }}
-            """)
+""")
 
-        os.system(f"wpa_supplicant -i wlan0 -c {TEMP_WPA_FILE} -B")
-        time.sleep(10)
+        # Start temporary Wi-Fi connection
+        os.system(f"sudo wpa_supplicant -B -i wlan0 -c {TEMP_WPA_FILE}")
 
-        result = subprocess.run(["iwgetid"], capture_output=True, text=True)
-        return ssid in result.stdout
+        # Wait up to 15 seconds for a successful connection
+        for _ in range(15):
+            result = subprocess.run(["iwgetid", "-r"], capture_output=True, text=True)
+            if ssid in result.stdout.strip():
+                return True  # Connection successful
+            time.sleep(1)  # Wait 1 second before checking again
+
+        return False  # Timeout, connection failed
+
     finally:
-        os.system("killall wpa_supplicant")
-        os.system(f"wpa_supplicant -i wlan0 -c {ORIGINAL_WPA_FILE} -B")
+        # Kill temporary `wpa_supplicant` session and restore original settings
+        os.system("sudo pkill wpa_supplicant")
+        os.system(f"sudo wpa_supplicant -B -i wlan0 -c {ORIGINAL_WPA_FILE}")
 
-def connect_to_new_network():
+
+def connect_to_wifi(ssid, password):
+    """ Writes Wi-Fi credentials to wpa_supplicant and attempts connection. """
+    wifi_config = f"""
+    network={{
+        ssid="{ssid}"
+        psk="{password}"
+        key_mgmt=WPA-PSK
+    }}
     """
-    Restart the Wi-Fi interface to connect to the new network.
-    """
+    with open("/etc/wpa_supplicant/wpa_supplicant.conf", "w") as file:
+        file.write(wifi_config)
+
+    # Restart Wi-Fi service
+    os.system("sudo systemctl restart wpa_supplicant")
     os.system("sudo systemctl restart dhcpcd")
-    os.system("sudo wpa_cli -i wlan0 reconfigure")
-    time.sleep(5)  # Wait a few seconds for the connection
-    result = subprocess.run(["iwgetid"], capture_output=True, text=True)
-    
-    if result.stdout:
+
+    # Wait for Wi-Fi connection
+    time.sleep(10)
+
+    # Check if connected
+    result = subprocess.run(["iwgetid", "-r"], capture_output=True, text=True)
+    if result.stdout.strip():
         return True  # Successfully connected
-    return False  # Connection failed
+    else:
+        return False  # Connection failed
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -55,9 +78,9 @@ def index():
         if validate_wifi_credentials(ssid, password):
             with open(ORIGINAL_WPA_FILE, "a") as f:
                 f.write(f'\nnetwork={{\n    ssid="{ssid}"\n    psk="{password}"\n}}')
-            
+
             # Apply new settings and connect immediately
-            if connect_to_new_network():
+            if connect_to_wifi():
                 return render_template("index.html", message="Connected successfully! The Pi is now on the new network.")
             else:
                 return render_template("index.html", error="Credentials saved, but failed to connect. Try rebooting.")
