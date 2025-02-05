@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Script is running from: $SCRIPT_DIR"
 
 echo "Updating system and installing required packages..."
-sudo apt update && sudo apt upgrade -y
+# sudo apt update && sudo apt upgrade -y
 sudo apt install -y hostapd dnsmasq python3-flask qrencode iw net-tools
 
 echo "Stopping services before configuration..."
