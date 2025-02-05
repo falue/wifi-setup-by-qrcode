@@ -4,6 +4,8 @@ set -e  # Exit on error
 
 # Detect the directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_USER=$(stat -c "%U" "$SCRIPT_DIR")  # Gets the owner of the script directory
+SCRIPT_GROUP=$(stat -c "%G" "$SCRIPT_DIR")  # Gets the group of the script directory
 
 echo "Script is running from: $SCRIPT_DIR"
 
@@ -147,7 +149,8 @@ After=network.target
 ExecStart=/usr/bin/python3 $SCRIPT_DIR/app.py
 WorkingDirectory=$SCRIPT_DIR
 Restart=always
-User=pi
+User=$SCRIPT_USER
+Group=$SCRIPT_GROUP
 
 [Install]
 WantedBy=multi-user.target
