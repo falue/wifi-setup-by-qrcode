@@ -88,7 +88,7 @@ if [[ ! -f "$SCRIPT_DIR/templates/index.html" ]]; then
 fi
 
 echo "Generating QR code for Wi-Fi setup page..."
-qrencode -o "$SCRIPT_DIR/qrcode.png" "http://192.168.4.1"
+qrencode -t SVG -o "$SCRIPT_DIR/qrcode.svg" "http://192.168.4.1"
 
 echo "Creating systemd service for the Flask app..."
 sudo tee /etc/systemd/system/wifi-setup.service > /dev/null <<EOF
