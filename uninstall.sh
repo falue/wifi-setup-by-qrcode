@@ -37,4 +37,17 @@ sudo systemctl disable hostapd
 sudo systemctl stop dnsmasq
 sudo systemctl disable dnsmasq
 
+# Remove dual-ip.service
+echo "Removing dual-ip.service (removing persistent 192.168.4.1)..."
+sudo systemctl stop dual-ip.service
+sudo systemctl disable dual-ip.service
+sudo rm -f /etc/systemd/system/dual-ip.service
+
+# Reload systemd to apply changes
+sudo systemctl daemon-reload
+
+# Remove secondary IP manually to ensure it's gone
+echo "Removing secondary IP (192.168.4.1) from wlan0..."
+sudo ip addr del 192.168.4.1/24 dev wlan0 || echo "192.168.4.1 was not assigned."
+
 echo "Uninstallation complete. Reboot to apply changes."

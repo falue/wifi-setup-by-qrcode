@@ -121,6 +121,27 @@ sudo systemctl enable dnsmasq
 sudo systemctl start hostapd
 sudo systemctl start dnsmasq
 
+echo "Creating systemd service to assign secondary IP at boot..."
+sudo tee /etc/systemd/system/dual-ip.service > /dev/null <<EOF
+[Unit]
+Description=Assign secondary IP (192.168.4.1) to wlan0
+After=network.target
+
+[Service]
+ExecStart=/sbin/ip addr add 192.168.4.1/24 dev wlan0
+ExecStop=/sbin/ip addr del 192.168.4.1/24 dev wlan0
+RemainAfterExit=yes
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start the dual-IP service
+sudo systemctl daemon-reload
+sudo systemctl enable dual-ip.service
+sudo systemctl start dual-ip.service
+
 echo "Ensuring Flask app directory exists at $SCRIPT_DIR"
 mkdir -p "$SCRIPT_DIR"
 
