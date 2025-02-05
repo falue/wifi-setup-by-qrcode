@@ -13,8 +13,20 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "Updating system and installing required packages..."
-# sudo apt update && sudo apt upgrade -y
+# ======= USER CONFIGURATION QUESTIONS =======
+# Ask if system update should be run
+echo "Do you want to run 'sudo apt update && sudo apt upgrade -y'? (y/n)"
+read -r RUN_UPDATE
+RUN_UPDATE=$(echo "$RUN_UPDATE" | tr '[:upper:]' '[:lower:]')
+
+if [[ "$RUN_UPDATE" == "y" ]]; then
+    echo "Running system update..."
+    sudo apt update && sudo apt upgrade -y
+else
+    echo "Skipping system update."
+fi
+
+echo "Installing required packages..."
 sudo apt install -y hostapd dnsmasq python3-flask qrencode iw net-tools
 
 echo "Stopping services before configuration..."
