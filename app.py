@@ -5,7 +5,7 @@ import time
 
 app = Flask(__name__, template_folder="templates")
 
-TEMP_WPA_FILE = "/tmp/wpa_supplicant.conf"
+TEMP_WPA_FILE = "/run/wpa_supplicant.conf"
 ORIGINAL_WPA_FILE = "/etc/wpa_supplicant/wpa_supplicant.conf"
 
 def validate_wifi_credentials(ssid, password):
