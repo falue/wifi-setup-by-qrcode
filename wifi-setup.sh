@@ -181,40 +181,4 @@ echo "Enabling and starting Wi-Fi setup service..."
 sudo systemctl enable wifi-setup
 sudo systemctl start wifi-setup
 
-echo "Setting up auto-switching between Wi-Fi client mode and hotspot mode..."
-sudo tee /etc/systemd/system/wifi-autoswitch.service > /dev/null <<EOF
-[Unit]
-Description=Wi-Fi Auto Switch
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/wifi-autoswitch.sh
-Restart=always
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo tee /usr/local/bin/wifi-autoswitch.sh > /dev/null <<EOF
-#!/bin/bash
-
-while true; do
-    if iwgetid -r > /dev/null; then
-        echo "Connected to Wi-Fi, disabling hotspot..."
-        systemctl stop hostapd
-        systemctl stop dnsmasq
-    else
-        echo "No Wi-Fi connection, enabling hotspot..."
-        systemctl start hostapd
-        systemctl start dnsmasq
-    fi
-    sleep 30
-done
-EOF
-
-chmod +x /usr/local/bin/wifi-autoswitch.sh
-sudo systemctl enable wifi-autoswitch.service
-sudo systemctl start wifi-autoswitch.service
-
 echo "Setup complete! Reboot to test."
