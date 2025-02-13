@@ -1,5 +1,7 @@
 # Wifi Setup by QR code
 
+> ***WIP:*** This does not work yet.
+
 This script installs & set ups everything needed for a headless raspberry pi
 to be connected to a known wifi by a user without ssh knowledge.
 
